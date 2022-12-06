@@ -1,15 +1,20 @@
+//! This is a simple implementation of a Set data structure backed by Zig's `std.AutoArrayHashMap`.
+
 const std = @import("std");
 
+/// A Set backed by an `std.AutoArrayHashMap`.
 pub fn Set(comptime T: type) type {
     return struct {
         map: std.AutoArrayHashMap(T, void),
 
         const Self = @This();
 
+        /// Initialize an empty set.
         pub fn init(allocator: std.mem.Allocator) Self {
             return .{ .map = std.AutoArrayHashMap(T, void).init(allocator) };
         }
 
+        /// Initialize a set with items copied from `slice`.
         pub fn fromSlice(allocator: std.mem.Allocator, slice: []const T) !Self {
             var self = init(allocator);
             errdefer self.deinit();
@@ -23,14 +28,18 @@ pub fn Set(comptime T: type) type {
             self.map.deinit();
         }
 
+        /// True if this set contains `item`.
         pub fn contains(self: Self, item: T) bool {
             return self.map.contains(item);
         }
 
+        /// Number of items in this set.
         pub fn count(self: Self) usize {
             return self.map.count();
         }
 
+        /// Returns a new `Set` whose items are the difference of this set and `other`. The difference consists of
+        /// all items in this set that are not contained in `other`.
         pub fn diff(
             self: Self,
             allocator: std.mem.Allocator,
@@ -46,24 +55,25 @@ pub fn Set(comptime T: type) type {
             return difference;
         }
 
+        /// True if this set and `other` contain the same items.
         pub fn eql(self: Self, other: Self) bool {
             return self.in(other) and self.count() == other.count();
         }
 
-        pub fn get(self: *Self, item: T) ?T {
-            return self.map.get(item);
-        }
-
+        /// True if all of this Set's items are contained in `other`.
         pub fn in(self: Self, other: Self) bool {
             return for (self.items()) |item| {
                 if (!other.contains(item)) break false;
             } else true;
         }
 
+        /// Returns a pointer to the inner `std.AutoArrayHashMap`.
         pub fn inner(self: *Self) *std.AutoArrayHashMap(T, void) {
             return &self.map;
         }
 
+        /// Returns a new `Set` whose items are the intersection of this set and `other`. The intersection
+        /// consists of all items that are common to both sets.
         pub fn intersect(
             self: Self,
             allocator: std.mem.Allocator,
@@ -79,38 +89,48 @@ pub fn Set(comptime T: type) type {
             return intersection;
         }
 
+        /// True if all the items in this set are contained in `other` and `other` has additional items not in this set.
         pub fn isSubset(self: Self, other: Self) bool {
             return self.in(other) and self.count() < other.count();
         }
 
+        /// True if all the items in `other` are contained in this set and this set has additional items.
         pub fn isSuperset(self: Self, other: Self) bool {
             return other.in(self) and other.count() < self.count();
         }
 
+        /// Returns the slice of items contained in this set.
         pub fn items(self: Self) []T {
             return self.map.keys();
         }
 
+        /// Returns the largest item contained in this set.
         pub fn max(self: Self) T {
             return std.mem.max(T, self.items());
         }
 
+        /// Returns the smallest item contained in this set.
         pub fn min(self: Self) T {
             return std.mem.min(T, self.items());
         }
 
+        /// Adds `item` to this set.
         pub fn put(self: *Self, item: T) !void {
             try self.map.put(item, {});
         }
 
+        /// Adds all items in `slice` to this set.
         pub fn putSlice(self: *Self, slice: []const T) !void {
             for (slice) |item| try self.put(item);
         }
 
+        /// Deletes `item` from this set.
         pub fn remove(self: *Self, item: T) bool {
             return self.map.swapRemove(item);
         }
 
+        /// Returns a new `Set` whose items are the symmetric difference of this set and `other`. The symmetric
+        /// difference consists of all items that are not common to both sets.
         pub fn symmetric(
             self: Self,
             allocator: std.mem.Allocator,
@@ -130,6 +150,8 @@ pub fn Set(comptime T: type) type {
             return sym;
         }
 
+        /// Returns a new `Set` whose items are the union of this set and `other`. The union is all the items
+        /// from both sets.
         pub fn unite(
             self: Self,
             allocator: std.mem.Allocator,

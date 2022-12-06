@@ -10,6 +10,15 @@ pub fn Set(comptime T: type) type {
             return .{ .map = std.AutoArrayHashMap(T, void).init(allocator) };
         }
 
+        pub fn fromSlice(allocator: std.mem.Allocator, slice: []const T) !Self {
+            var self = init(allocator);
+            errdefer self.deinit();
+
+            try self.putSlice(slice);
+
+            return self;
+        }
+
         pub fn deinit(self: *Self) void {
             self.map.deinit();
         }
@@ -138,13 +147,10 @@ pub fn Set(comptime T: type) type {
 }
 
 test "intersection" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 3, 4, 5, 6 });
     defer set_b.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 3, 4, 5, 6 });
 
     var intersection = try set_a.intersect(std.testing.allocator, set_b);
     defer intersection.deinit();
@@ -156,13 +162,10 @@ test "intersection" {
 }
 
 test "union" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 3, 4, 5, 6 });
     defer set_b.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 3, 4, 5, 6 });
 
     var uni = try set_a.unite(std.testing.allocator, set_b);
     defer uni.deinit();
@@ -179,13 +182,10 @@ test "union" {
 }
 
 test "difference" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 3, 4, 5, 6 });
     defer set_b.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 3, 4, 5, 6 });
 
     var diff = try set_a.diff(std.testing.allocator, set_b);
     defer diff.deinit();
@@ -200,13 +200,10 @@ test "difference" {
 }
 
 test "symmetric difference" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 3, 4, 5, 6 });
     defer set_b.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 3, 4, 5, 6 });
 
     var sym = try set_a.symmetric(std.testing.allocator, set_b);
     defer sym.deinit();
@@ -221,19 +218,14 @@ test "symmetric difference" {
 }
 
 test "in" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 3, 4, 5, 6 });
     defer set_b.deinit();
-    var set_c = Set(u8).init(std.testing.allocator);
+    var set_c = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2 });
     defer set_c.deinit();
-    var set_d = Set(u8).init(std.testing.allocator);
+    var set_d = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 5, 6 });
     defer set_d.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 3, 4, 5, 6 });
-    try set_c.putSlice(&[_]u8{ 1, 2 });
-    try set_d.putSlice(&[_]u8{ 5, 6 });
 
     try std.testing.expect(set_c.in(set_a));
     try std.testing.expect(set_d.in(set_b));
@@ -241,18 +233,12 @@ test "in" {
 }
 
 test "comparison" {
-    var set_a = Set(u8).init(std.testing.allocator);
+    var set_a = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_a.deinit();
-    var set_b = Set(u8).init(std.testing.allocator);
+    var set_b = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set_b.deinit();
-    var set_c = Set(u8).init(std.testing.allocator);
+    var set_c = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2 });
     defer set_c.deinit();
-    var set_d = Set(u8).init(std.testing.allocator);
-    defer set_d.deinit();
-
-    try set_a.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_b.putSlice(&[_]u8{ 1, 2, 3, 4 });
-    try set_c.putSlice(&[_]u8{ 1, 2 });
 
     try std.testing.expect(set_c.isSubset(set_a));
     try std.testing.expect(set_a.isSuperset(set_c));
@@ -261,10 +247,8 @@ test "comparison" {
 }
 
 test "max min" {
-    var set = Set(u8).init(std.testing.allocator);
+    var set = try Set(u8).fromSlice(std.testing.allocator, &[_]u8{ 1, 2, 3, 4 });
     defer set.deinit();
-
-    try set.putSlice(&[_]u8{ 1, 2, 3, 4 });
 
     try std.testing.expectEqual(@as(u8, 4), set.max());
     try std.testing.expectEqual(@as(u8, 1), set.min());

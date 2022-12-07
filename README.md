@@ -13,10 +13,10 @@ $ mkdir libs
 $ cd libs
 $ git clone https://github.com/jecolon/set 
 $ cd ..
-$ vim build.exe
+$ vim build.zig
 ```
 
-In `build.exe` add to your `exe` or `lib`
+In `build.zig` add to your `exe` or `lib`
 
 ```
 exe.addPackagePath("set", "libs/set/src/set.zig");
